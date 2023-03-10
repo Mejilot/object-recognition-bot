@@ -1,7 +1,9 @@
-# def main():
-#     BOT.enable_save_next_step_handlers()
-#     BOT.load_next_step_handlers()
+from bot.main import TBot
+import os
+def main():
+    new_bot = Bot(os.environ.get("TELEBOTTOKEN"))
+    new_bot.start_bot()
 
-#     BOT.infinity_polling()
-# if __name__ == "__main__":
-#     main()
+    BOT.infinity_polling()
+if __name__ == "__main__":
+    main()

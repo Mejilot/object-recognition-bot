@@ -15,30 +15,35 @@ class RecognitionModel:
         self.model = fasterrcnn_resnet50_fpn(weights=self.weights, num_classes=len(self.weights.meta["categories"]), weights_backbone=ResNet50_Weights.DEFAULT).to(self.device)
         self.model.eval()
         self.preprocess = self.weights.transforms()
-    def procces_image(self, img_bytes):
+        self.threshold = 0.75
+    def process_image(self, img_bytes):
+        img_tensor_i, img_tensor_f = byte_image_to_tensors(img_bytes)
+        prep_img = self.preprocess(img_tensor_f).unsqueeze_(0)
+        prediction = self.model(prep_img)[0]
+
+        prediction['boxes'] = prediction['boxes'][prediction['scores'] > self.threshold]
+        prediction['labels'] = prediction['labels'][prediction['scores'] > self.threshold]
+        prediction['scores'] = prediction['scores'][prediction['scores'] > self.threshold]
+        labels = ["{}: {:.2f}%".format(self.weights.meta["categories"][prediction["labels"][i]],
+                                       round(float(prediction['scores'][i]) * 100, 0))
+                  for i in range(len(prediction["labels"]))]
+        box = draw_bounding_boxes(image = img_tensor_i, boxes=prediction["boxes"], labels=labels,
+                                colors=(0, 255, 42), width=2,
+                                font_size=17, font='Arial')
+
+        im = to_pil_image(box.detach())
+        img_byte_arr = io.BytesIO()
+        im.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
+        pred_list = ["{}. {} - {}".format(i + 1,
+                                          self.weights.meta["categories"][prediction["labels"][i]],
+                                          labels[i]) for i in range(len(prediction["labels"]))]
+        return (img_byte_arr, '\n'.join(pred_list))
+    def byte_image_to_tensors(self, img_bytes):
         raw_img = Image.open(io.BytesIO(img_bytes))
         img = raw_img.convert('RGB')
         img_tensor_i = transforms.Compose([
             transforms.PILToTensor()
         ])(img)
         img_tensor_f = transforms.ToTensor()(img)
-        prep_img = self.preprocess(img_tensor_f).unsqueeze_(0)
-        prediction = self.model(prep_img)[0]
-        threshold = 0.75
-        prediction['boxes'] = prediction['boxes'][prediction['scores'] > threshold]
-        prediction['labels'] = prediction['labels'][prediction['scores'] > threshold]
-        prediction['scores'] = prediction['scores'][prediction['scores'] > threshold]
-        labels = ["{}: {:.2f}%".format(self.weights.meta["categories"][prediction["labels"][i]], round(float(prediction['scores'][i]) * 100, 0)) for i in range(len(prediction["labels"]))]
-        box = draw_bounding_boxes(image = img_tensor_i, boxes=prediction["boxes"],
-                                labels=labels,
-                                colors=(0, 255, 42),
-                                width=2, 
-                                font_size=17,
-                                font='Arial')
-
-        im = to_pil_image(box.detach())
-        img_byte_arr = io.BytesIO()
-        im.save(img_byte_arr, format='PNG')
-        img_byte_arr = img_byte_arr.getvalue()
-        pred_list = ["{}. {} - {} - {:.2f}%".format(i + 1, self.weights.meta["categories"][prediction["labels"][i]], prediction['boxes'][i].tolist(), round(float(prediction['scores'][i]) * 100, 0)) for i in range(len(prediction["labels"]))]
-        return (img_byte_arr, '\n'.join(pred_list))
+        return img_tensor_i, img_tensor_f
