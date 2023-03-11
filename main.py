@@ -1,4 +1,4 @@
-from bot.main import TBot
+from bot.bot_class import TBot
 import os
 
 
