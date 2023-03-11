@@ -1,12 +1,12 @@
+import io
+import torch
 from torchvision.io.image import read_image
 from torchvision.utils import draw_bounding_boxes
 from torchvision.transforms.functional import to_pil_image
 from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_ResNet50_FPN_Weights
 from torchvision.models import ResNet50_Weights
-import torch
-from PIL import Image
 from torchvision import transforms
-import io
+from PIL import Image
 
 
 class RecognitionModel:
