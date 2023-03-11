@@ -18,6 +18,7 @@ class TBot:
         # обработчик для изображений присылаемых quick format с сжатием
         @self.bot.message_handler(content_types=['photo'])
         def handle_docs_photos(message):
+            print('Handling photo')
             # не стал обрабатывать несколько фото в одном сообщении, беру последнее
             file_id = message.photo[-1].file_id
             file_info = self.bot.get_file(file_id)
@@ -31,6 +32,7 @@ class TBot:
         # обработчик на случай если изображение посылается как документ
         @self.bot.message_handler(content_types=['document'])
         def handle_docs_bmp(message):
+            print('Handling document')
             # проверка что присылаемый документ - изображение
             if message.document.mime_type.split('/')[0] != 'image':
                 self.handle_wrong_input(message)
